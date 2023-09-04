@@ -1,41 +1,67 @@
 package Jira_API.tests;
 
-import io.restassured.RestAssured;
+import Jira_API.tests.helpers.CookieGetter;
+import Jira_API.tests.models.*;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static Jira_API.tests.specs.Specifications.*;
 import static io.restassured.RestAssured.given;
 
-import static io.restassured.http.ContentType.JSON;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
-public class IssueTests {
+public class IssueTests extends TestBase {
+    static String cookieValue;
+    @BeforeAll
+    public static void getCookieValue() {
+        CookieGetter cookieGetter = new CookieGetter();
+        cookieValue = cookieGetter.getCookie();
+    }
+
     @Test
-    public void creatIsueTest() {
-        RestAssured.baseURI = "http://localhost:8080";
-        given().relaxedHTTPSValidation()
-                .header("cookie", "JSESSIONID=8D93582153FF052395C6B73786D2F052")
-                .log().all()
-                .contentType(JSON)
-                .body("{\n" +
-                        "    \"fields\": {\n" +
-                        "       \"project\":\n" +
-                        "       {\n" +
-                        "          \"key\": \"AT\"\n" +
-                        "       },\n" +
-                        "       \"summary\": \"API Defect\",\n" +
-                        "       \"description\": \"Defect using the Postman\",\n" +
-                        "       \"issuetype\": {\n" +
-                        "          \"id\": \"10005\"\n" +
-                        "       }\n" +
-                        "   }\n" +
-                        "}")
+    public void createIssueTest() {
+
+        String projectKey = "AT";
+        String summary = "API Defect";
+        String description = "Defect using the Postman";
+        String id = "10005";
+
+        Fields fields = new Fields();
+        Project project = new Project();
+        project.setKey(projectKey);
+        fields.setProject(project);
+        fields.setSummary(summary);
+        fields.setDescription(description);
+        IssueType issueType = new IssueType();
+        issueType.setId(id);
+        fields.setIssuetype(issueType);
+
+        CreationIssueRequestModel creationIssueRequestModel = new CreationIssueRequestModel();
+        creationIssueRequestModel.setFields(fields);
+
+        CreationIssueResponseModel response = given().relaxedHTTPSValidation()
+                .header("cookie", cookieValue)
+                .spec(requestSpec)
+                .body(creationIssueRequestModel)
                 .when()
                 .post("/rest/api/2/issue")
                 .then()
-                .log().all()
-                .statusCode(201);
+                .spec(responseSpec201)
+                .extract().as(CreationIssueResponseModel.class);
 
+                String idFromResopnse = response.getId();
+                String keyFromResponse = response.getKey();
+
+        CreationIssueResponseModel getResponse = given().relaxedHTTPSValidation()
+                .header("cookie", cookieValue)
+                .spec(requestSpec)
+                .when()
+                .get("/rest/api/2/issue/" + idFromResopnse)
+                .then()
+                .spec(responseSpec200)
+                .extract().as(CreationIssueResponseModel.class);
+                assertEquals(idFromResopnse, getResponse.getId());
+                assertEquals(keyFromResponse, getResponse.getKey());
     }
-
-
 }
