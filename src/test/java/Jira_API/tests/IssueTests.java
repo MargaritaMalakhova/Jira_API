@@ -1,6 +1,7 @@
 package Jira_API.tests;
 
 import Jira_API.tests.helpers.CookieGetter;
+import Jira_API.tests.helpers.IssueGetter;
 import Jira_API.tests.models.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 public class IssueTests extends TestBase {
-    static String cookieValue;
+    //TODO: add tags
+    private static String cookieValue;
     @BeforeAll
     public static void getCookieValue() {
         CookieGetter cookieGetter = new CookieGetter();
@@ -63,5 +65,44 @@ public class IssueTests extends TestBase {
                 .extract().as(CreationIssueResponseModel.class);
                 assertEquals(idFromResopnse, getResponse.getId());
                 assertEquals(keyFromResponse, getResponse.getKey());
+    }
+
+    @Test
+    public void addCommentTest() {
+        IssueGetter issueGetter = new IssueGetter();
+        String issueId = issueGetter.createIssue();
+        CreationCommentRequestModel creationCommentRequestModel = new CreationCommentRequestModel();
+        String body = "new comment";
+        creationCommentRequestModel.setBody("new comment");
+        Visibility visibility = new Visibility();
+        visibility.setType("role");
+        visibility.setValue("Administrators");
+        creationCommentRequestModel.setVisibility(visibility);
+
+        CreationCommentResponseModel response = given().relaxedHTTPSValidation()
+                .header("cookie", cookieValue)
+                .spec(requestSpec)
+                .body(creationCommentRequestModel)
+                .when()
+                .post("/rest/api/2/issue/" + issueId + "/comment")
+                .then()
+                .spec(responseSpec201)
+                .extract().as(CreationCommentResponseModel.class);
+
+        String idFromResopnse = response.getId();
+        String selfFromResponse = response.getSelf();
+        String bodyFromResponse = response.getBody();
+
+        CreationCommentResponseModel getResponse = given().relaxedHTTPSValidation()
+                .header("cookie", cookieValue)
+                .spec(requestSpec)
+                .when()
+                .get("/rest/api/2/issue/" + issueId + "/comment/" + idFromResopnse)
+                .then()
+                .spec(responseSpec200)
+                .extract().as(CreationCommentResponseModel.class);
+        assertEquals(idFromResopnse, getResponse.getId());
+        assertEquals(selfFromResponse, getResponse.getSelf());
+        assertEquals(bodyFromResponse, body);
     }
 }
