@@ -105,4 +105,28 @@ public class IssueTests extends TestBase {
         assertEquals(selfFromResponse, getResponse.getSelf());
         assertEquals(bodyFromResponse, body);
     }
+    @Test
+    public void deleteIssueTest() {
+        IssueGetter issueGetter = new IssueGetter();
+        String issueId = issueGetter.createIssue();
+        String errorMess = "Issue Does Not Exist";
+
+        given().relaxedHTTPSValidation()
+                .header("cookie", cookieValue)
+                .spec(requestSpec)
+                .when()
+                .delete("/rest/api/2/issue/" + issueId)
+                .then()
+                .spec(responseSpec204);
+
+        ErrorMessagesResponseModel getResponse = given().relaxedHTTPSValidation()
+                .header("cookie", cookieValue)
+                .spec(requestSpec)
+                .when()
+                .get("/rest/api/2/issue/" + issueId)
+                .then()
+                .spec(responseSpec404)
+                .extract().as(ErrorMessagesResponseModel.class);
+        assertEquals(errorMess, getResponse.getErrorMessages()[0]);
+    }
 }

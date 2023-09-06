@@ -26,4 +26,15 @@ public class Specifications {
             .log(ALL)
             .expectStatusCode(201)
             .build();
+
+    public static ResponseSpecification responseSpec204 = new ResponseSpecBuilder()
+            .log(ALL)
+            .expectStatusCode(204)
+            .build();
+
+    public static ResponseSpecification responseSpec404 = new ResponseSpecBuilder()
+            .log(ALL)
+            .expectStatusCode(404)
+            .build();
 }
+
