@@ -6,6 +6,8 @@ import Jira_API.tests.helpers.IssueRemover;
 import Jira_API.tests.models.*;
 import org.junit.jupiter.api.*;
 
+import java.io.File;
+
 import static Jira_API.tests.specs.Specifications.*;
 import static io.restassured.RestAssured.given;
 
@@ -14,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class IssueTests extends TestBase {
     //TODO: add tags
-    IssueGetter issueGetter = new IssueGetter();
     private static String cookieValue;
     private static String issueId;
     @BeforeAll
@@ -124,6 +125,35 @@ public class IssueTests extends TestBase {
         assertEquals(idFromResponse, getResponse.getId());
         assertEquals(selfFromResponse, getResponse.getSelf());
         assertEquals(bodyFromResponse, body);
+    }
+    @Test
+    public void addAttachmentsTest() {
+        File file = new File("./src/test/resources/file.txt");
+
+        Attachment[] response = given().relaxedHTTPSValidation()
+                .header("cookie", cookieValue)
+                .header("X-Atlassian-Token", "no-check")
+                .spec(requestSpecAttach)
+                .multiPart("file", file)
+                .when()
+                .post("/rest/api/2/issue/" + issueId + "/attachments")
+                .then()
+                .spec(responseSpec200)
+                .extract().as(Attachment[].class);
+        assertEquals(response[0].getFilename(), file.getName());
+        String idFromResponse = response[0].getId();
+        String selfFromResponse = response[0].getSelf();
+
+        AttachmentResponseModel getResponse = given().relaxedHTTPSValidation()
+                .header("cookie", cookieValue)
+                .spec(requestSpec)
+                .when()
+                .get("/rest/api/2/attachment/" + idFromResponse)
+                .then()
+                .spec(responseSpec200)
+                .extract().as(AttachmentResponseModel.class);
+        assertEquals(selfFromResponse, getResponse.getSelf());
+        assertEquals(file.getName(), getResponse.getFilename());
     }
     @Test
     public void updateCommentTest() {

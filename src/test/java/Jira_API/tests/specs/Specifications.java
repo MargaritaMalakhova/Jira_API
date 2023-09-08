@@ -12,10 +12,13 @@ import static io.restassured.http.ContentType.JSON;
 
 public class Specifications {
 
-    private static CookieGetter cookieGetter = new CookieGetter();
     public static RequestSpecification requestSpec = with()
             .log().all()
             .contentType(JSON);
+
+    public static RequestSpecification requestSpecAttach = with()
+            .log().all()
+            .contentType("multipart/form-data");
 
     public static ResponseSpecification responseSpec200 = new ResponseSpecBuilder()
             .log(ALL)
