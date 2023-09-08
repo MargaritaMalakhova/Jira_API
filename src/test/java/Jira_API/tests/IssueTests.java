@@ -23,6 +23,15 @@ public class IssueTests extends TestBase {
         cookieValue = cookieGetter.getCookie();
     }
 
+    @BeforeEach
+    public void createIssue(TestInfo testInfo) {
+        if(testInfo.getTags().contains("CreateIssue")) {
+            return;
+        }
+        IssueGetter issueGetter = new IssueGetter();
+        issueId = issueGetter.createIssue(cookieValue);
+    }
+
     @AfterEach
     public void removeIssue(TestInfo testInfo) {
             if(testInfo.getTags().contains("RemoveIssue")) {
@@ -33,8 +42,8 @@ public class IssueTests extends TestBase {
         issueRemover.deleteIssue(cookieValue, issueId);
     }
 
-
     @Test
+    @Tag("CreateIssue")
     public void createIssueTest() {
 
         String projectKey = "AT";
@@ -82,7 +91,6 @@ public class IssueTests extends TestBase {
 
     @Test
     public void addCommentTest() {
-        issueId = issueGetter.createIssue(cookieValue);
         CreationCommentRequestModel creationCommentRequestModel = new CreationCommentRequestModel();
         String body = "new comment";
         creationCommentRequestModel.setBody("new comment");
@@ -119,7 +127,6 @@ public class IssueTests extends TestBase {
     }
     @Test
     public void updateCommentTest() {
-        issueId = issueGetter.createIssue(cookieValue);
         CreationCommentRequestModel creationCommentRequestModel = new CreationCommentRequestModel();
         String body = "new comment";
         creationCommentRequestModel.setBody(body);
@@ -156,7 +163,6 @@ public class IssueTests extends TestBase {
     @Test
     @Tag("RemoveIssue")
     public void deleteIssueTest() {
-        issueId = issueGetter.createIssue(cookieValue);
         String errorMess = "Issue Does Not Exist";
 
         given().relaxedHTTPSValidation()
