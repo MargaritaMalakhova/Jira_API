@@ -2,9 +2,9 @@ package Jira_API.tests;
 
 import Jira_API.tests.helpers.CookieGetter;
 import Jira_API.tests.helpers.IssueGetter;
+import Jira_API.tests.helpers.IssueRemover;
 import Jira_API.tests.models.*;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import static Jira_API.tests.specs.Specifications.*;
 import static io.restassured.RestAssured.given;
@@ -14,12 +14,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class IssueTests extends TestBase {
     //TODO: add tags
+    IssueGetter issueGetter = new IssueGetter();
     private static String cookieValue;
+    private static String issueId;
     @BeforeAll
     public static void getCookieValue() {
         CookieGetter cookieGetter = new CookieGetter();
         cookieValue = cookieGetter.getCookie();
     }
+
+    @AfterEach
+    public void removeIssue(TestInfo testInfo) {
+            if(testInfo.getTags().contains("RemoveIssue")) {
+                return;
+            }
+
+        IssueRemover issueRemover = new IssueRemover();
+        issueRemover.deleteIssue(cookieValue, issueId);
+    }
+
 
     @Test
     public void createIssueTest() {
@@ -52,25 +65,24 @@ public class IssueTests extends TestBase {
                 .spec(responseSpec201)
                 .extract().as(CreationIssueResponseModel.class);
 
-                String idFromResopnse = response.getId();
+                issueId = response.getId();
                 String keyFromResponse = response.getKey();
 
         CreationIssueResponseModel getResponse = given().relaxedHTTPSValidation()
                 .header("cookie", cookieValue)
                 .spec(requestSpec)
                 .when()
-                .get("/rest/api/2/issue/" + idFromResopnse)
+                .get("/rest/api/2/issue/" + issueId)
                 .then()
                 .spec(responseSpec200)
                 .extract().as(CreationIssueResponseModel.class);
-                assertEquals(idFromResopnse, getResponse.getId());
+                assertEquals(issueId, getResponse.getId());
                 assertEquals(keyFromResponse, getResponse.getKey());
     }
 
     @Test
     public void addCommentTest() {
-        IssueGetter issueGetter = new IssueGetter();
-        String issueId = issueGetter.createIssue();
+        issueId = issueGetter.createIssue(cookieValue);
         CreationCommentRequestModel creationCommentRequestModel = new CreationCommentRequestModel();
         String body = "new comment";
         creationCommentRequestModel.setBody("new comment");
@@ -89,7 +101,7 @@ public class IssueTests extends TestBase {
                 .spec(responseSpec201)
                 .extract().as(CreationCommentResponseModel.class);
 
-        String idFromResopnse = response.getId();
+        String idFromResponse = response.getId();
         String selfFromResponse = response.getSelf();
         String bodyFromResponse = response.getBody();
 
@@ -97,18 +109,54 @@ public class IssueTests extends TestBase {
                 .header("cookie", cookieValue)
                 .spec(requestSpec)
                 .when()
-                .get("/rest/api/2/issue/" + issueId + "/comment/" + idFromResopnse)
+                .get("/rest/api/2/issue/" + issueId + "/comment/" + idFromResponse)
                 .then()
                 .spec(responseSpec200)
                 .extract().as(CreationCommentResponseModel.class);
-        assertEquals(idFromResopnse, getResponse.getId());
+        assertEquals(idFromResponse, getResponse.getId());
         assertEquals(selfFromResponse, getResponse.getSelf());
         assertEquals(bodyFromResponse, body);
     }
     @Test
+    public void updateCommentTest() {
+        issueId = issueGetter.createIssue(cookieValue);
+        CreationCommentRequestModel creationCommentRequestModel = new CreationCommentRequestModel();
+        String body = "new comment";
+        creationCommentRequestModel.setBody(body);
+        Visibility visibility = new Visibility();
+        visibility.setType("role");
+        visibility.setValue("Administrators");
+        creationCommentRequestModel.setVisibility(visibility);
+
+        CreationCommentResponseModel response = given().relaxedHTTPSValidation()
+                .header("cookie", cookieValue)
+                .spec(requestSpec)
+                .body(creationCommentRequestModel)
+                .when()
+                .post("/rest/api/2/issue/" + issueId + "/comment")
+                .then()
+                .spec(responseSpec201)
+                .extract().as(CreationCommentResponseModel.class);
+
+        String idFromResponse = response.getId();
+        String updatedBody = "updated comment";
+        creationCommentRequestModel.setBody(updatedBody);
+
+        CreationCommentResponseModel getResponse = given().relaxedHTTPSValidation()
+                .header("cookie", cookieValue)
+                .spec(requestSpec)
+                .body(creationCommentRequestModel)
+                .when()
+                .put("/rest/api/2/issue/" + issueId + "/comment/" + idFromResponse)
+                .then()
+                .spec(responseSpec200)
+                .extract().as(CreationCommentResponseModel.class);
+        assertEquals(updatedBody, getResponse.getBody());
+    }
+    @Test
+    @Tag("RemoveIssue")
     public void deleteIssueTest() {
-        IssueGetter issueGetter = new IssueGetter();
-        String issueId = issueGetter.createIssue();
+        issueId = issueGetter.createIssue(cookieValue);
         String errorMess = "Issue Does Not Exist";
 
         given().relaxedHTTPSValidation()

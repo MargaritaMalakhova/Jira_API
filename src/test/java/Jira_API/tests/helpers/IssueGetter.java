@@ -8,7 +8,7 @@ import static Jira_API.tests.specs.Specifications.responseSpec201;
 import static io.restassured.RestAssured.given;
 
 public class IssueGetter extends TestBase {
-    public String createIssue() {
+    public String createIssue(String cookieValue) {
         String projectKey = "AT";
         String summary = "API Defect";
         String description = "Defect using the Postman";
@@ -26,10 +26,9 @@ public class IssueGetter extends TestBase {
 
         CreationIssueRequestModel creationIssueRequestModel = new CreationIssueRequestModel();
         creationIssueRequestModel.setFields(fields);
-        CookieGetter cookieGetter = new CookieGetter();
 
         CreationIssueResponseModel response = given().relaxedHTTPSValidation()
-                .header("cookie", cookieGetter.getCookie())
+                .header("cookie", cookieValue)
                 .spec(requestSpec)
                 .body(creationIssueRequestModel)
                 .when()
@@ -38,7 +37,7 @@ public class IssueGetter extends TestBase {
                 .spec(responseSpec201)
                 .extract().as(CreationIssueResponseModel.class);
 
-        String idFromResopnse = response.getId();
-        return idFromResopnse;
+        String issueId = response.getId();
+        return issueId;
     }
 }
